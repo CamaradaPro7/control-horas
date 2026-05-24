@@ -37,7 +37,7 @@ color:white;
 padding:
 max(20px, env(safe-area-inset-top))
 20px
-120px;
+40px;
 
 min-height:100vh;
 
@@ -275,91 +275,6 @@ text-align:center;
 
 }
 
-.navbar{
-
-position:fixed;
-
-bottom:20px;
-left:20px;
-right:20px;
-
-background:
-rgba(15,23,42,.75);
-
-backdrop-filter:
-blur(20px);
-
-border:
-1px solid rgba(255,255,255,.06);
-
-border-radius:30px;
-
-padding:15px;
-
-display:flex;
-justify-content:space-around;
-
-box-shadow:
-0 0 30px rgba(0,0,0,.4);
-
-z-index:999;
-
-}
-
-.nav-item{
-
-display:flex;
-flex-direction:column;
-align-items:center;
-
-font-size:14px;
-
-opacity:.5;
-
-transition:.3s;
-
-}
-
-.nav-item.active{
-
-opacity:1;
-
-color:#22D3EE;
-
-}
-
-.chart{
-
-height:14px;
-
-border-radius:999px;
-
-overflow:hidden;
-
-background:
-rgba(255,255,255,.05);
-
-margin-top:20px;
-
-}
-
-.chart-fill{
-
-height:100%;
-
-width:0%;
-
-background:
-linear-gradient(
-90deg,
-#A855F7,
-#22D3EE
-);
-
-transition:1s;
-
-}
-
 .export-btn{
 
 margin-top:20px;
@@ -509,20 +424,11 @@ id="globalTotal">
 
 </div>
 
-<div class="chart">
-
-<div
-class="chart-fill"
-id="chartFill">
-</div>
-
-</div>
-
 <button
 class="export-btn"
 onclick="exportData()">
 
-Exportar resumen
+Exportar informe premium
 
 </button>
 
@@ -535,30 +441,6 @@ Registros válidos
 </div>
 
 <div id="recordsList"></div>
-
-</div>
-
-<div class="navbar">
-
-<div class="nav-item active">
-🏠
-<span>Inicio</span>
-</div>
-
-<div class="nav-item">
-📅
-<span>Periodo</span>
-</div>
-
-<div class="nav-item">
-📊
-<span>Stats</span>
-</div>
-
-<div class="nav-item">
-⚙️
-<span>Ajustes</span>
-</div>
 
 </div>
 
@@ -826,11 +708,6 @@ document
 .innerText =
 `${total}h`;
 
-document
-.getElementById('chartFill')
-.style.width =
-`${Math.min(total * 5,100)}%`;
-
 }
 
 function deleteRecord(id){
@@ -859,35 +736,305 @@ render();
 
 function exportData(){
 
-const data =
-JSON.stringify(
-records,
-null,
-2
-);
+let extra = 0;
+let sabado = 0;
+let festivo = 0;
 
-const blob =
-new Blob(
-[data],
-{
-type:'application/json'
+let rows = '';
+
+records.forEach(record=>{
+
+const recordDate =
+new Date(record.date);
+
+const validRange =
+
+(recordDate >= currentPeriod.start)
+&&
+(recordDate < currentPeriod.end);
+
+if(!validRange)
+return;
+
+if(record.type === 'Extra')
+extra += record.hours;
+
+if(record.type === 'Sábado')
+sabado += record.hours;
+
+if(record.type === 'Festivo')
+festivo += record.hours;
+
+rows += `
+
+<tr>
+
+<td>
+${formatDate(record.date)}
+</td>
+
+<td>
+${record.type}
+</td>
+
+<td>
+${record.hours}h
+</td>
+
+<td>
+${record.notes || '-'}
+</td>
+
+</tr>
+
+`;
+
+});
+
+const total =
+extra + sabado + festivo;
+
+const report = `
+
+<html>
+
+<head>
+
+<title>
+Informe Control Horas
+</title>
+
+<style>
+
+body{
+
+font-family:-apple-system;
+
+padding:40px;
+
+background:white;
+
+color:#111827;
+
 }
+
+h1{
+
+font-size:42px;
+
+margin-bottom:10px;
+
+background:
+linear-gradient(
+90deg,
+#A855F7,
+#22D3EE
 );
 
-const url =
-URL.createObjectURL(blob);
+-webkit-background-clip:text;
 
-const a =
-document.createElement('a');
+-webkit-text-fill-color:transparent;
 
-a.href = url;
+}
 
-a.download =
-'control-horas.json';
+.subtitle{
 
-a.click();
+font-size:18px;
 
-URL.revokeObjectURL(url);
+color:#6B7280;
+
+margin-bottom:40px;
+
+}
+
+.card{
+
+border:
+1px solid #E5E7EB;
+
+border-radius:24px;
+
+padding:25px;
+
+margin-bottom:25px;
+
+}
+
+.section{
+
+font-size:22px;
+
+font-weight:700;
+
+margin-bottom:20px;
+
+color:#7C3AED;
+
+}
+
+table{
+
+width:100%;
+
+border-collapse:collapse;
+
+margin-top:15px;
+
+}
+
+th{
+
+background:#F3F4F6;
+
+padding:16px;
+
+text-align:left;
+
+font-size:15px;
+
+}
+
+td{
+
+padding:16px;
+
+border-top:
+1px solid #E5E7EB;
+
+font-size:15px;
+
+}
+
+.total{
+
+font-size:32px;
+
+font-weight:800;
+
+color:#22D3EE;
+
+margin-top:15px;
+
+}
+
+.footer{
+
+margin-top:40px;
+
+font-size:14px;
+
+color:#6B7280;
+
+text-align:center;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>
+INFORME CONTROL HORAS
+</h1>
+
+<div class="subtitle">
+Sistema cerrado de control horario
+</div>
+
+<div class="card">
+
+<div class="section">
+Periodo
+</div>
+
+<div>
+${formatDate(currentPeriod.start)}
+ →
+${formatDate(currentPeriod.end)}
+</div>
+
+</div>
+
+<div class="card">
+
+<div class="section">
+Resumen
+</div>
+
+<table>
+
+<tr>
+<td>Horas Extra</td>
+<td>${extra}h</td>
+</tr>
+
+<tr>
+<td>Sábados</td>
+<td>${sabado}h</td>
+</tr>
+
+<tr>
+<td>Festivos</td>
+<td>${festivo}h</td>
+</tr>
+
+</table>
+
+<div class="total">
+${total}h acumuladas
+</div>
+
+</div>
+
+<div class="card">
+
+<div class="section">
+Registros del periodo
+</div>
+
+<table>
+
+<tr>
+
+<th>Fecha</th>
+<th>Tipo</th>
+<th>Horas</th>
+<th>Observaciones</th>
+
+</tr>
+
+${rows}
+
+</table>
+
+</div>
+
+<div class="footer">
+
+Informe generado automáticamente
+<br><br>
+
+${new Date().toLocaleString('es-ES')}
+
+</div>
+
+</body>
+
+</html>
+
+`;
+
+const win =
+window.open(
+'',
+'_blank'
+);
+
+win.document.write(report);
+
+win.document.close();
 
 }
 
