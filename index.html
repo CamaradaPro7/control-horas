@@ -169,9 +169,7 @@ color:#00FF99;
 }
 
 .small{
-
 opacity:.6;
-
 }
 
 .period{
@@ -188,6 +186,72 @@ background:
 rgba(255,255,255,.05);
 
 font-size:15px;
+
+}
+
+input,
+select{
+
+width:100%;
+
+padding:16px;
+
+margin-bottom:15px;
+
+border:none;
+
+border-radius:18px;
+
+background:
+rgba(255,255,255,.06);
+
+color:white;
+
+font-size:18px;
+
+}
+
+button{
+
+width:100%;
+
+padding:18px;
+
+border:none;
+
+border-radius:20px;
+
+background:
+linear-gradient(
+90deg,
+#A855F7,
+#22D3EE
+);
+
+color:white;
+
+font-size:18px;
+font-weight:700;
+
+}
+
+.error{
+
+margin-top:15px;
+
+color:#FF7070;
+
+font-size:16px;
+
+}
+
+.success{
+
+margin-top:15px;
+
+color:#00FF99;
+
+font-size:16px;
 
 }
 
@@ -219,6 +283,61 @@ class="period"
 id="periodText">
 Periodo
 </div>
+
+</div>
+
+<div class="card">
+
+<div class="section-title">
+Nuevo registro
+</div>
+
+<form id="recordForm">
+
+<input
+type="date"
+id="date"
+required>
+
+<select id="type">
+
+<option value="">
+Seleccionar tipo
+</option>
+
+<option value="Extra">
+Extra
+</option>
+
+<option value="Sábado">
+Sábado
+</option>
+
+<option value="Festivo">
+Festivo
+</option>
+
+</select>
+
+<input
+type="number"
+step="0.1"
+placeholder="Horas"
+id="hours"
+required>
+
+<input
+type="text"
+placeholder="Observaciones (opcional)"
+id="notes">
+
+<button type="submit">
+Registrar
+</button>
+
+<div id="message"></div>
+
+</form>
 
 </div>
 
@@ -290,41 +409,11 @@ Registros válidos
 
 <script>
 
-const records = [
-
-{
-date:'2026-06-16',
-type:'Extra',
-hours:2.5
-},
-
-{
-date:'2026-06-18',
-type:'Sábado',
-hours:5
-},
-
-{
-date:'2026-06-22',
-type:'Festivo',
-hours:8
-},
-
-{
-date:'2026-05-20',
-type:'Extra',
-hours:1.5
-}
-
-];
-
 const VALID_TYPES = [
 'Extra',
 'Sábado',
 'Festivo'
 ];
-
-const today = new Date();
 
 function getPeriod(date){
 
@@ -356,32 +445,124 @@ return { start, end };
 
 }
 
+const today = new Date();
+
 const currentPeriod =
 getPeriod(today);
-
-const previousPeriod = {
-
-start:
-new Date(
-currentPeriod.start.getFullYear(),
-currentPeriod.start.getMonth()-1,
-15
-),
-
-end:
-new Date(
-currentPeriod.start
-)
-
-};
 
 document
 .getElementById('periodText')
 .innerText =
 
 `${formatDate(currentPeriod.start)}
- → 
+ →
 ${formatDate(currentPeriod.end)}`;
+
+let records =
+
+JSON.parse(
+localStorage.getItem('records')
+)
+|| [];
+
+render();
+
+document
+.getElementById('recordForm')
+.addEventListener(
+'submit',
+function(e){
+
+e.preventDefault();
+
+const date =
+document
+.getElementById('date')
+.value;
+
+const type =
+document
+.getElementById('type')
+.value;
+
+const hours =
+parseFloat(
+document
+.getElementById('hours')
+.value
+);
+
+const notes =
+document
+.getElementById('notes')
+.value;
+
+const message =
+document
+.getElementById('message');
+
+message.innerHTML = '';
+
+if(!date || !type || !hours){
+
+message.innerHTML =
+'<div class="error">Campos obligatorios incompletos</div>';
+
+return;
+
+}
+
+if(!VALID_TYPES.includes(type)){
+
+message.innerHTML =
+'<div class="error">Tipo inválido</div>';
+
+return;
+
+}
+
+const recordDate =
+new Date(date);
+
+const validPeriod =
+
+(recordDate >= currentPeriod.start)
+&&
+(recordDate < currentPeriod.end);
+
+if(!validPeriod){
+
+message.innerHTML =
+'<div class="error">Fecha fuera del periodo activo</div>';
+
+return;
+
+}
+
+records.push({
+date,
+type,
+hours,
+notes
+});
+
+localStorage.setItem(
+'records',
+JSON.stringify(records)
+);
+
+message.innerHTML =
+'<div class="success">Registro guardado</div>';
+
+document
+.getElementById('recordForm')
+.reset();
+
+render();
+
+});
+
+function render(){
 
 let extra = 0;
 let sabado = 0;
@@ -390,17 +571,23 @@ let festivo = 0;
 const list =
 document.getElementById('recordsList');
 
-records.forEach(record=>{
+list.innerHTML = '';
 
-if(!VALID_TYPES.includes(record.type))
-return;
+records.sort(
+(a,b)=>
+new Date(b.date)
+-
+new Date(a.date)
+);
+
+records.forEach(record=>{
 
 const recordDate =
 new Date(record.date);
 
 const validRange =
 
-(recordDate >= previousPeriod.start)
+(recordDate >= currentPeriod.start)
 &&
 (recordDate < currentPeriod.end);
 
@@ -436,6 +623,16 @@ ${record.type}
 ${record.hours} horas
 </div>
 
+${
+record.notes
+?
+`<div class="small">
+${record.notes}
+</div>`
+:
+''
+}
+
 </div>
 
 `;
@@ -461,6 +658,8 @@ document
 .getElementById('globalTotal')
 .innerText =
 `${extra + sabado + festivo}h`;
+
+}
 
 function formatDate(date){
 
