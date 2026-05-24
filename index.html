@@ -1,1 +1,498 @@
-va# control-horas
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+<meta http-equiv="Cache-Control"
+content="no-cache, no-store, must-revalidate">
+
+<title>Control Horas</title>
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+}
+
+body{
+
+background:
+linear-gradient(
+180deg,
+#030712 0%,
+#050816 100%
+);
+
+font-family:-apple-system;
+
+color:white;
+
+padding:
+max(20px, env(safe-area-inset-top))
+20px
+40px;
+
+min-height:100vh;
+
+}
+
+.card{
+
+background:
+rgba(11,18,32,.85);
+
+backdrop-filter:
+blur(20px);
+
+border:
+1px solid rgba(255,255,255,.05);
+
+border-radius:32px;
+
+padding:25px;
+
+margin-bottom:20px;
+
+box-shadow:
+0 0 40px rgba(168,85,247,.08);
+
+}
+
+.title{
+
+font-size:56px;
+font-weight:800;
+line-height:1;
+margin-bottom:10px;
+
+}
+
+.gradient{
+
+background:
+linear-gradient(
+90deg,
+#A855F7,
+#22D3EE
+);
+
+-webkit-background-clip:text;
+-webkit-text-fill-color:transparent;
+
+}
+
+.subtitle{
+
+opacity:.7;
+font-size:18px;
+
+}
+
+.section-title{
+
+font-size:28px;
+font-weight:700;
+margin-bottom:20px;
+
+}
+
+.stat{
+
+display:flex;
+justify-content:space-between;
+
+padding:15px 0;
+
+border-bottom:
+1px solid rgba(255,255,255,.05);
+
+font-size:22px;
+
+}
+
+.value{
+
+color:#22D3EE;
+font-weight:700;
+
+}
+
+.record{
+
+padding:18px 0;
+
+border-bottom:
+1px solid rgba(255,255,255,.05);
+
+}
+
+.record-top{
+
+display:flex;
+justify-content:space-between;
+
+margin-bottom:8px;
+
+}
+
+.type{
+
+padding:6px 14px;
+
+border-radius:999px;
+
+font-size:14px;
+font-weight:700;
+
+}
+
+.extra{
+background:rgba(34,211,238,.12);
+color:#22D3EE;
+}
+
+.sabado{
+background:rgba(168,85,247,.12);
+color:#A855F7;
+}
+
+.festivo{
+background:rgba(0,255,153,.12);
+color:#00FF99;
+}
+
+.small{
+
+opacity:.6;
+
+}
+
+.period{
+
+display:inline-block;
+
+margin-top:20px;
+
+padding:10px 18px;
+
+border-radius:999px;
+
+background:
+rgba(255,255,255,.05);
+
+font-size:15px;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="card">
+
+<div class="title">
+
+Control
+<br>
+
+<span class="gradient">
+Horas
+</span>
+
+</div>
+
+<div class="subtitle">
+Sistema cerrado de control horario
+</div>
+
+<div
+class="period"
+id="periodText">
+Periodo
+</div>
+
+</div>
+
+<div class="card">
+
+<div class="section-title">
+Resumen periodo actual
+</div>
+
+<div class="stat">
+
+<span>Horas Extra</span>
+
+<span
+class="value"
+id="extraTotal">
+0h
+</span>
+
+</div>
+
+<div class="stat">
+
+<span>Sábados</span>
+
+<span
+class="value"
+id="sabadoTotal">
+0h
+</span>
+
+</div>
+
+<div class="stat">
+
+<span>Festivos</span>
+
+<span
+class="value"
+id="festivoTotal">
+0h
+</span>
+
+</div>
+
+<div class="stat">
+
+<span>Total acumulado</span>
+
+<span
+class="value"
+id="globalTotal">
+0h
+</span>
+
+</div>
+
+</div>
+
+<div class="card">
+
+<div class="section-title">
+Registros válidos
+</div>
+
+<div id="recordsList"></div>
+
+</div>
+
+<script>
+
+const records = [
+
+{
+date:'2026-06-16',
+type:'Extra',
+hours:2.5
+},
+
+{
+date:'2026-06-18',
+type:'Sábado',
+hours:5
+},
+
+{
+date:'2026-06-22',
+type:'Festivo',
+hours:8
+},
+
+{
+date:'2026-05-20',
+type:'Extra',
+hours:1.5
+}
+
+];
+
+const VALID_TYPES = [
+'Extra',
+'Sábado',
+'Festivo'
+];
+
+const today = new Date();
+
+function getPeriod(date){
+
+const year = date.getFullYear();
+const month = date.getMonth();
+
+let start;
+let end;
+
+if(date.getDate() >= 15){
+
+start =
+new Date(year, month, 15);
+
+end =
+new Date(year, month + 1, 15);
+
+}else{
+
+start =
+new Date(year, month - 1, 15);
+
+end =
+new Date(year, month, 15);
+
+}
+
+return { start, end };
+
+}
+
+const currentPeriod =
+getPeriod(today);
+
+const previousPeriod = {
+
+start:
+new Date(
+currentPeriod.start.getFullYear(),
+currentPeriod.start.getMonth()-1,
+15
+),
+
+end:
+new Date(
+currentPeriod.start
+)
+
+};
+
+document
+.getElementById('periodText')
+.innerText =
+
+`${formatDate(currentPeriod.start)}
+ → 
+${formatDate(currentPeriod.end)}`;
+
+let extra = 0;
+let sabado = 0;
+let festivo = 0;
+
+const list =
+document.getElementById('recordsList');
+
+records.forEach(record=>{
+
+if(!VALID_TYPES.includes(record.type))
+return;
+
+const recordDate =
+new Date(record.date);
+
+const validRange =
+
+(recordDate >= previousPeriod.start)
+&&
+(recordDate < currentPeriod.end);
+
+if(!validRange)
+return;
+
+if(record.type === 'Extra')
+extra += record.hours;
+
+if(record.type === 'Sábado')
+sabado += record.hours;
+
+if(record.type === 'Festivo')
+festivo += record.hours;
+
+list.innerHTML += `
+
+<div class="record">
+
+<div class="record-top">
+
+<div>
+${formatDate(record.date)}
+</div>
+
+<div class="type ${getTypeClass(record.type)}">
+${record.type}
+</div>
+
+</div>
+
+<div class="small">
+${record.hours} horas
+</div>
+
+</div>
+
+`;
+
+});
+
+document
+.getElementById('extraTotal')
+.innerText =
+`${extra}h`;
+
+document
+.getElementById('sabadoTotal')
+.innerText =
+`${sabado}h`;
+
+document
+.getElementById('festivoTotal')
+.innerText =
+`${festivo}h`;
+
+document
+.getElementById('globalTotal')
+.innerText =
+`${extra + sabado + festivo}h`;
+
+function formatDate(date){
+
+const d = new Date(date);
+
+return d.toLocaleDateString(
+'es-ES',
+{
+day:'2-digit',
+month:'2-digit',
+year:'2-digit'
+}
+);
+
+}
+
+function getTypeClass(type){
+
+if(type === 'Extra')
+return 'extra';
+
+if(type === 'Sábado')
+return 'sabado';
+
+if(type === 'Festivo')
+return 'festivo';
+
+return '';
+
+}
+
+</script>
+
+</body>
+</html>
