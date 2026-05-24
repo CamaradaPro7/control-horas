@@ -37,7 +37,7 @@ color:white;
 padding:
 max(20px, env(safe-area-inset-top))
 20px
-40px;
+120px;
 
 min-height:100vh;
 
@@ -137,6 +137,7 @@ border-bottom:
 
 display:flex;
 justify-content:space-between;
+align-items:center;
 
 margin-bottom:8px;
 
@@ -255,6 +256,119 @@ font-size:16px;
 
 }
 
+.delete-btn{
+
+margin-top:15px;
+
+background:
+rgba(255,70,70,.12);
+
+color:#FF7070;
+
+padding:12px;
+
+border-radius:16px;
+
+font-size:15px;
+
+text-align:center;
+
+}
+
+.navbar{
+
+position:fixed;
+
+bottom:20px;
+left:20px;
+right:20px;
+
+background:
+rgba(15,23,42,.75);
+
+backdrop-filter:
+blur(20px);
+
+border:
+1px solid rgba(255,255,255,.06);
+
+border-radius:30px;
+
+padding:15px;
+
+display:flex;
+justify-content:space-around;
+
+box-shadow:
+0 0 30px rgba(0,0,0,.4);
+
+z-index:999;
+
+}
+
+.nav-item{
+
+display:flex;
+flex-direction:column;
+align-items:center;
+
+font-size:14px;
+
+opacity:.5;
+
+transition:.3s;
+
+}
+
+.nav-item.active{
+
+opacity:1;
+
+color:#22D3EE;
+
+}
+
+.chart{
+
+height:14px;
+
+border-radius:999px;
+
+overflow:hidden;
+
+background:
+rgba(255,255,255,.05);
+
+margin-top:20px;
+
+}
+
+.chart-fill{
+
+height:100%;
+
+width:0%;
+
+background:
+linear-gradient(
+90deg,
+#A855F7,
+#22D3EE
+);
+
+transition:1s;
+
+}
+
+.export-btn{
+
+margin-top:20px;
+
+background:
+rgba(255,255,255,.06);
+
+}
+
 </style>
 
 </head>
@@ -328,7 +442,7 @@ required>
 
 <input
 type="text"
-placeholder="Observaciones (opcional)"
+placeholder="Observaciones"
 id="notes">
 
 <button type="submit">
@@ -395,6 +509,23 @@ id="globalTotal">
 
 </div>
 
+<div class="chart">
+
+<div
+class="chart-fill"
+id="chartFill">
+</div>
+
+</div>
+
+<button
+class="export-btn"
+onclick="exportData()">
+
+Exportar resumen
+
+</button>
+
 </div>
 
 <div class="card">
@@ -404,6 +535,30 @@ Registros válidos
 </div>
 
 <div id="recordsList"></div>
+
+</div>
+
+<div class="navbar">
+
+<div class="nav-item active">
+🏠
+<span>Inicio</span>
+</div>
+
+<div class="nav-item">
+📅
+<span>Periodo</span>
+</div>
+
+<div class="nav-item">
+📊
+<span>Stats</span>
+</div>
+
+<div class="nav-item">
+⚙️
+<span>Ajustes</span>
+</div>
 
 </div>
 
@@ -540,6 +695,7 @@ return;
 }
 
 records.push({
+id:Date.now(),
 date,
 type,
 hours,
@@ -633,11 +789,22 @@ ${record.notes}
 ''
 }
 
+<div
+class="delete-btn"
+onclick="deleteRecord(${record.id})">
+
+Eliminar registro
+
+</div>
+
 </div>
 
 `;
 
 });
+
+const total =
+extra + sabado + festivo;
 
 document
 .getElementById('extraTotal')
@@ -657,7 +824,70 @@ document
 document
 .getElementById('globalTotal')
 .innerText =
-`${extra + sabado + festivo}h`;
+`${total}h`;
+
+document
+.getElementById('chartFill')
+.style.width =
+`${Math.min(total * 5,100)}%`;
+
+}
+
+function deleteRecord(id){
+
+const confirmDelete =
+confirm(
+'¿Eliminar registro?'
+);
+
+if(!confirmDelete)
+return;
+
+records =
+records.filter(
+r=>r.id !== id
+);
+
+localStorage.setItem(
+'records',
+JSON.stringify(records)
+);
+
+render();
+
+}
+
+function exportData(){
+
+const data =
+JSON.stringify(
+records,
+null,
+2
+);
+
+const blob =
+new Blob(
+[data],
+{
+type:'application/json'
+}
+);
+
+const url =
+URL.createObjectURL(blob);
+
+const a =
+document.createElement('a');
+
+a.href = url;
+
+a.download =
+'control-horas.json';
+
+a.click();
+
+URL.revokeObjectURL(url);
 
 }
 
