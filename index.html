@@ -234,6 +234,8 @@ color:white;
 font-size:18px;
 font-weight:700;
 
+margin-top:12px;
+
 }
 
 .error{
@@ -277,10 +279,17 @@ text-align:center;
 
 .export-btn{
 
-margin-top:20px;
-
 background:
 rgba(255,255,255,.06);
+
+}
+
+.close-btn{
+
+background:
+rgba(255,70,70,.12);
+
+color:#FF7070;
 
 }
 
@@ -311,6 +320,15 @@ Sistema cerrado de control horario
 class="period"
 id="periodText">
 Periodo
+</div>
+
+<div
+class="small"
+style="margin-top:15px"
+id="statusText">
+
+Periodo abierto
+
 </div>
 
 </div>
@@ -428,7 +446,23 @@ id="globalTotal">
 class="export-btn"
 onclick="exportData()">
 
-Exportar informe premium
+Exportar informe PDF
+
+</button>
+
+<button
+class="close-btn"
+onclick="closePeriod()">
+
+Cerrar periodo
+
+</button>
+
+<button
+class="close-btn"
+onclick="clearData()">
+
+Borrar todos los registros
 
 </button>
 
@@ -494,6 +528,36 @@ document
 `${formatDate(currentPeriod.start)}
  →
 ${formatDate(currentPeriod.end)}`;
+
+const closedPeriods =
+
+JSON.parse(
+localStorage.getItem('closedPeriods')
+)
+|| [];
+
+const currentBlocked =
+
+closedPeriods.some(period=>{
+
+const start =
+new Date(period.start);
+
+return (
+currentPeriod.start.getTime()
+=== start.getTime()
+);
+
+});
+
+if(currentBlocked){
+
+document
+.getElementById('statusText')
+.innerHTML =
+'🔒 Periodo cerrado';
+
+}
 
 let records =
 
@@ -571,6 +635,33 @@ if(!validPeriod){
 
 message.innerHTML =
 '<div class="error">Fecha fuera del periodo activo</div>';
+
+return;
+
+}
+
+const blocked =
+
+closedPeriods.some(period=>{
+
+const start =
+new Date(period.start);
+
+const end =
+new Date(period.end);
+
+return (
+recordDate >= start
+&&
+recordDate < end
+);
+
+});
+
+if(blocked){
+
+message.innerHTML =
+'<div class="error">Periodo cerrado y bloqueado</div>';
 
 return;
 
@@ -731,6 +822,69 @@ JSON.stringify(records)
 );
 
 render();
+
+}
+
+function closePeriod(){
+
+const confirmClose =
+confirm(
+'¿Cerrar periodo actual?'
+);
+
+if(!confirmClose)
+return;
+
+closedPeriods.push({
+
+start:
+currentPeriod.start,
+
+end:
+currentPeriod.end,
+
+closedAt:
+new Date()
+
+});
+
+localStorage.setItem(
+'closedPeriods',
+JSON.stringify(closedPeriods)
+);
+
+document
+.getElementById('statusText')
+.innerHTML =
+'🔒 Periodo cerrado';
+
+alert(
+'Periodo cerrado correctamente'
+);
+
+}
+
+function clearData(){
+
+const confirmClear =
+confirm(
+'¿Eliminar TODOS los registros?'
+);
+
+if(!confirmClear)
+return;
+
+localStorage.removeItem(
+'records'
+);
+
+records = [];
+
+render();
+
+alert(
+'Todos los registros eliminados'
+);
 
 }
 
